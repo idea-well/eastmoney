@@ -5,6 +5,7 @@ import (
 	"github.com/gocolly/colly/v2"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const pengPaiUrl = "https://www.thepaper.cn"
@@ -15,6 +16,11 @@ type PengPaiData struct {
 	Content string `json:"content"`  // 新闻内容
 	PubTime string `json:"pub_time"` // 发布时间
 	SrcUrl  string `json:"src_url"`  // 原文链接
+}
+
+func (p *PengPaiData) PubTimeFormat(layout string) string {
+	t, _ := time.Parse("2006-01-02 15:04", p.PubTime)
+	return t.Format(layout)
 }
 
 type PengPaiDatas []*PengPaiData
