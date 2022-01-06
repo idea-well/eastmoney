@@ -36,6 +36,7 @@ func (ds PengPaiDatas) indexOf(id string) int {
 
 func (ds PengPaiDatas) fetchContent() error {
 	var errs = make(Errors, 0)
+	var lock = make(chan struct{}, 5)
 	spider := newSpider(true)
 	spider.OnHTML(".news_about", func(e *colly.HTMLElement) {
 		i, _ := strconv.Atoi(e.Request.URL.Fragment)
@@ -48,8 +49,9 @@ func (ds PengPaiDatas) fetchContent() error {
 	spider.OnError(func(resp *colly.Response, err error) {
 		errs = append(errs, fmt.Errorf("fetch content error, status: %d, error: %v", resp.StatusCode, err))
 	})
+	spider.OnResponse(func(_ *colly.Response) { <-lock })
 	for i, d := range ds {
-		fmt.Println(d.Title)
+		lock <- struct{}{}
 		_ = spider.Visit(d.SrcUrl + fmt.Sprintf("#%d", i))
 	}
 	spider.Wait() // wait done
