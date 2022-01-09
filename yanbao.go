@@ -14,6 +14,13 @@ type yanBaoRes struct {
 	Hits int         `json:"hits"`
 	Size int         `json:"size"`
 	Data YanBaoDatas `json:"data"`
+	Year int         `json:"currentYear"`
+}
+
+func (r *yanBaoRes) setYear() {
+	for _, data := range r.Data {
+		data.CurrentYear = r.Year
+	}
 }
 
 type YanBaoData struct {
@@ -24,9 +31,33 @@ type YanBaoData struct {
 	OrgSName     string `json:"orgSName"`     // 机构简称
 	StockCode    string `json:"stockCode"`    // 股票代码
 	StockName    string `json:"stockName"`    // 股票名称
-	IndvInduCode string `json:"indvInduCode"` // 行业编号
-	IndvInduName string `json:"indvInduName"` // 行业名称
+	IndvInduCode string `json:"indvInduCode"` // 个股行业编号
+	IndvInduName string `json:"indvInduName"` // 个股行业名称
+	IndustryCode string `json:"industryCode"` // 行业行业编号
+	IndustryName string `json:"industryName"` // 行业行业名称
 	PublishDate  string `json:"publishDate"`  // 发布日期
+
+	CurrentYear           int
+	PredictThisYearEps    string `json:"predictThisYearEps"`    // 今年Eps
+	PredictThisYearPe     string `json:"predictThisYearPe"`     // 今年Pe
+	PredictNextYearEps    string `json:"predictNextYearEps"`    // 明年Eps
+	PredictNextYearPe     string `json:"predictNextYearPe"`     // 明年Pe
+	PredictNextTwoYearEps string `json:"predictNextTwoYearEps"` // 后年Eps
+	PredictNextTwoYearPe  string `json:"predictNextTwoYearPe"`  // 后年Pe
+}
+
+func (d *YanBaoData) Predict() map[int]map[string]string {
+	var map_ = make(map[int]map[string]string)
+	map_[d.CurrentYear] = map[string]string{
+		"pe": d.PredictThisYearPe, "eps": d.PredictThisYearEps,
+	}
+	map_[d.CurrentYear+1] = map[string]string{
+		"pe": d.PredictNextYearPe, "eps": d.PredictNextYearEps,
+	}
+	map_[d.CurrentYear+2] = map[string]string{
+		"pe": d.PredictNextTwoYearPe, "eps": d.PredictNextTwoYearEps,
+	}
+	return map_
 }
 
 func (d *YanBaoData) PubTimeFormat(layout string) string {
@@ -116,6 +147,7 @@ func doFetchYanBaoPage(query string, pageNo int) (YanBaoDatas, error) {
 		defer resp.Body.Close()
 		bts, err := ioutil.ReadAll(resp.Body)
 		return callWithoutErr(err, func() error {
+			defer res.setYear()
 			return json.Unmarshal(bts, res)
 		})
 	})
