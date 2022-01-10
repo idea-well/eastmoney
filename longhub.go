@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type longHubRes struct {
@@ -20,7 +21,6 @@ type LongHubData struct {
 	BILLBOARD_BUY_AMT  float64              `json:"BILLBOARD_BUY_AMT"`  // 龙虎榜买入额
 	BILLBOARD_SELL_AMT float64              `json:"BILLBOARD_SELL_AMT"` // 龙虎榜卖出额
 	BILLBOARD_NET_AMT  float64              `json:"BILLBOARD_NET_AMT"`  // 龙虎榜净买额
-	DEAL_NET_RATIO     float64              `json:"DEAL_NET_RATIO"`     // 净买额占总成交比例
 	DEAL_AMOUNT_RATIO  float64              `json:"DEAL_AMOUNT_RATIO"`  // 成交额占总成交比例
 	FREE_MARKET_CAP    float64              `json:"FREE_MARKET_CAP"`    // 流通市值
 	SECUCODE           string               `json:"SECUCODE"`           // 股票代码
@@ -47,7 +47,29 @@ func (d *LongHubData) fetchSellDetails() (err error) {
 
 type LongHubDatas []*LongHubData
 
+// STDatas ST龙虎榜
+func (ds LongHubDatas) STDatas() LongHubDatas {
+	datas := make(LongHubDatas, 0)
+	for _, d := range ds {
+		if strings.Contains(d.SECURITY_NAME_ABBR, "ST") {
+			datas = append(datas, d)
+		}
+	}
+	return datas
+}
+
+// HSDatas 换手率龙虎榜
+func (ds LongHubDatas) HSDatas() LongHubDatas {
+
+}
+
+// ZDDatas 涨跌幅龙虎榜
+func (ds LongHubDatas) ZDDatas() LongHubDatas {
+
+}
+
 func (ds LongHubDatas) fetchDetail() error {
+	return nil
 	errs := make(Errors, 0)
 	line := pool.AddLine(func(i interface{}) {
 		errs.add(

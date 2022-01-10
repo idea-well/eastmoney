@@ -7,9 +7,9 @@ import (
 )
 
 type banKuaiRes struct {
-	Hits int            `json:"hits"`
-	Size int            `json:"size"`
-	Data []*BanKuaiData `json:"data"`
+	Hits int          `json:"hits"`
+	Size int          `json:"size"`
+	Data BanKuaiDatas `json:"data"`
 }
 
 type BanKuaiData struct {
@@ -20,24 +20,34 @@ type BanKuaiData struct {
 	FirstLetter string `json:"firstLetter"`
 }
 
+type BanKuaiDatas []*BanKuaiData
+
+func (ds BanKuaiDatas) indexByName() map[string]*BanKuaiData {
+	map_ := make(map[string]*BanKuaiData)
+	for _, data := range ds {
+		map_[data.BkName] = data
+	}
+	return map_
+}
+
 // HangYeBanKuai 行业板块
-func HangYeBanKuai() ([]*BanKuaiData, error) {
+func HangYeBanKuai() (BanKuaiDatas, error) {
 	return doFetchBanKuai("016")
 }
 
 // GaiNianBanKuai 概念板块
-func GaiNianBanKuai() ([]*BanKuaiData, error) {
+func GaiNianBanKuai() (BanKuaiDatas, error) {
 	return doFetchBanKuai("007")
 }
 
 // DiYuBanKuai 地域板块
-func DiYuBanKuai() ([]*BanKuaiData, error) {
+func DiYuBanKuai() (BanKuaiDatas, error) {
 	return doFetchBanKuai("020")
 }
 
 const banKuaiApi = "https://reportapi.eastmoney.com/report/bk"
 
-func doFetchBanKuai(code string) ([]*BanKuaiData, error) {
+func doFetchBanKuai(code string) (BanKuaiDatas, error) {
 	var res = new(banKuaiRes)
 	resp, err := http.Get(banKuaiApi + "?bkCode=" + code)
 	return res.Data, callWithoutErr(err, func() error {

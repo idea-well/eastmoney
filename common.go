@@ -10,7 +10,7 @@ import (
 var pool *factory.Master
 
 func init() {
-	pool = factory.NewMaster(8, 2)
+	pool = factory.NewMaster(6, 2)
 }
 
 func newSpider(async bool) *colly.Collector {
