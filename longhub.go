@@ -60,16 +60,15 @@ func (ds LongHubDatas) STDatas() LongHubDatas {
 
 // HSDatas 换手率龙虎榜
 func (ds LongHubDatas) HSDatas() LongHubDatas {
-
+	return ds
 }
 
 // ZDDatas 涨跌幅龙虎榜
 func (ds LongHubDatas) ZDDatas() LongHubDatas {
-
+	return ds
 }
 
 func (ds LongHubDatas) fetchDetail() error {
-	return nil
 	errs := make(Errors, 0)
 	line := pool.AddLine(func(i interface{}) {
 		errs.add(
