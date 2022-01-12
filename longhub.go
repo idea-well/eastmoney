@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strings"
+	"sort"
 )
 
 type longHubRes struct {
@@ -47,25 +47,30 @@ func (d *LongHubData) fetchSellDetails() (err error) {
 
 type LongHubDatas []*LongHubData
 
-// STDatas ST龙虎榜
-func (ds LongHubDatas) STDatas() LongHubDatas {
-	datas := make(LongHubDatas, 0)
-	for _, d := range ds {
-		if strings.Contains(d.SECURITY_NAME_ABBR, "ST") {
-			datas = append(datas, d)
-		}
+func (ds LongHubDatas) Codes() []string {
+	ss := make([]string, len(ds))
+	for i, d := range ds {
+		ss[i] = d.SECUCODE
 	}
-	return datas
+	return ss
 }
 
-// HSDatas 换手率龙虎榜
-func (ds LongHubDatas) HSDatas() LongHubDatas {
-	return ds
-}
-
-// ZDDatas 涨跌幅龙虎榜
-func (ds LongHubDatas) ZDDatas() LongHubDatas {
-	return ds
+// IndexByExp 上榜理由归类
+func (ds LongHubDatas) Groups() LongHubGroups {
+	gs := make(LongHubGroups, 0)
+	tmp := make(map[string]int)
+	for _, d := range ds {
+		if _, ok := tmp[d.EXPLANATION]; !ok {
+			tmp[d.EXPLANATION] = len(gs)
+			gs = append(gs, &LongHubGroup{
+				Explanation: d.EXPLANATION,
+				Datas:       make(LongHubDatas, 0),
+			})
+		}
+		gs[tmp[d.EXPLANATION]].add(d)
+	}
+	sort.Sort(gs)
+	return gs
 }
 
 func (ds LongHubDatas) fetchDetail() error {
@@ -85,15 +90,20 @@ func (ds LongHubDatas) fetchDetail() error {
 
 const longHubApi = "https://datacenter-web.eastmoney.com/api/data/v1/get"
 
-func DateLongHub(date string) (LongHubDatas, error) {
-	ds, err := fetchLongHub(date)
+// DateLongHub 每日龙虎榜
+// market: 069001017=京市A股
+// market: 069001002002=创业板，069001002001=深圳A股
+// market: 069001001006=科创板，069001001001=沪市A股
+// market: 069001001003=沪市ST，069001002005=深圳ST
+func DateLongHub(date, market string) (LongHubDatas, error) {
+	ds, err := fetchLongHub(date, market)
 	return ds, callWithoutErr(err, ds.fetchDetail)
 }
 
-func fetchLongHub(date string) (LongHubDatas, error) {
+func fetchLongHub(date, market string) (LongHubDatas, error) {
 	var datass, page = make(LongHubDatas, 0), 1
 	for {
-		datas, err := fetchLongHubPage(date, page)
+		datas, err := fetchLongHubPage(date, market, page)
 		if err != nil || len(datas) == 0 {
 			return datass, err
 		}
@@ -102,10 +112,10 @@ func fetchLongHub(date string) (LongHubDatas, error) {
 	}
 }
 
-func fetchLongHubPage(date string, pageNo int) (LongHubDatas, error) {
+func fetchLongHubPage(date, market string, pageNo int) (LongHubDatas, error) {
 	var res = new(longHubRes)
 	page := fmt.Sprintf("&pageSize=50&pageNumber=%d", pageNo)
-	filter := fmt.Sprintf("(TRADE_DATE>='%s')(TRADE_DATE<='%s')", date, date)
+	filter := fmt.Sprintf("(TRADE_DATE>='%s')(TRADE_DATE<='%s')(TRADE_MARKET_CODE=\"%s\")", date, date, market)
 	query := "?reportName=RPT_DAILYBILLBOARD_DETAILS&columns=ALL"
 	resp, err := http.Get(longHubApi + query + page + "&filter=" + url.QueryEscape(filter))
 	return res.Result.Data, callWithoutErr(err, func() error {
@@ -159,4 +169,32 @@ func fetchLongHubSellDetail(date, code string) ([]*LongHubDetailData, error) {
 			return json.Unmarshal(bts, res)
 		})
 	})
+}
+
+// LongHubGroup 按上榜理由归类
+type LongHubGroup struct {
+	Explanation string
+	Datas       LongHubDatas
+}
+
+func (g *LongHubGroup) add(data *LongHubData) {
+	g.Datas = append(g.Datas, data)
+}
+
+type LongHubGroups []*LongHubGroup
+
+func (gs LongHubGroups) Len() int { return len(gs) }
+
+func (gs LongHubGroups) Less(i, j int) bool {
+	return len(gs[i].Explanation) < len(gs[j].Explanation)
+}
+
+func (gs LongHubGroups) Swap(i, j int) { gs[i], gs[j] = gs[j], gs[i] }
+
+func (gs LongHubGroups) Explanations() []string {
+	ss := make([]string, len(gs))
+	for i, g := range gs {
+		ss[i] = g.Explanation
+	}
+	return ss
 }
