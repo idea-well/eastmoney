@@ -35,14 +35,18 @@ type LongHubData struct {
 	SELL_DETAILS       []*LongHubDetailData // 卖出明细
 }
 
-func (d *LongHubData) fetchBuyDetails() (err error) {
-	d.BUY_DETAILS, err = fetchLongHubBuyDetail(d.TRADE_DATE[0:10], d.SECURITY_CODE)
-	return
+func (d *LongHubData) fetchBuyDetails() error {
+	details, err := fetchLongHubBuyDetail(d.TRADE_DATE[0:10], d.SECURITY_CODE)
+	return callWithoutErr2(err, func() {
+		d.BUY_DETAILS = details.unique()
+	})
 }
 
-func (d *LongHubData) fetchSellDetails() (err error) {
-	d.SELL_DETAILS, err = fetchLongHubSellDetail(d.TRADE_DATE[0:10], d.SECURITY_CODE)
-	return
+func (d *LongHubData) fetchSellDetails() error {
+	details, err := fetchLongHubSellDetail(d.TRADE_DATE[0:10], d.SECURITY_CODE)
+	return callWithoutErr2(err, func() {
+		d.SELL_DETAILS = details.unique()
+	})
 }
 
 type LongHubDatas []*LongHubData
@@ -129,7 +133,7 @@ func fetchLongHubPage(date, market string, pageNo int) (LongHubDatas, error) {
 
 type longHubDetailRes struct {
 	Result struct {
-		Data []*LongHubDetailData `json:"data"`
+		Data LongHubDetailDatas `json:"data"`
 	} `json:"result"`
 }
 
@@ -143,7 +147,25 @@ type LongHubDetailData struct {
 	TOTAL_SELLRIO    float64 `json:"TOTAL_SELLRIO"`    // 卖出占比
 }
 
-func fetchLongHubBuyDetail(date, code string) ([]*LongHubDetailData, error) {
+type LongHubDetailDatas []*LongHubDetailData
+
+func (ds LongHubDetailDatas) unique() LongHubDetailDatas {
+	if len(ds) == 0 {
+		return ds
+	}
+	datas := make(LongHubDetailDatas, 0)
+	map_ := make(map[string]struct{})
+	for _, d := range ds {
+		if _, ok := map_[d.OPERATEDEPT_CODE]; ok {
+			continue
+		}
+		datas = append(datas, d)
+		map_[d.OPERATEDEPT_CODE] = struct{}{}
+	}
+	return datas
+}
+
+func fetchLongHubBuyDetail(date, code string) (LongHubDetailDatas, error) {
 	var res = new(longHubDetailRes)
 	filter := fmt.Sprintf("(TRADE_DATE='%s')(SECURITY_CODE=\"%s\")", date, code)
 	query := "?reportName=RPT_BILLBOARD_DAILYDETAILSBUY&columns=ALL&pageSize=50&pageNumber=1"
@@ -157,7 +179,7 @@ func fetchLongHubBuyDetail(date, code string) ([]*LongHubDetailData, error) {
 	})
 }
 
-func fetchLongHubSellDetail(date, code string) ([]*LongHubDetailData, error) {
+func fetchLongHubSellDetail(date, code string) (LongHubDetailDatas, error) {
 	var res = new(longHubDetailRes)
 	filter := fmt.Sprintf("(TRADE_DATE='%s')(SECURITY_CODE=\"%s\")", date, code)
 	query := "?reportName=RPT_BILLBOARD_DAILYDETAILSSELL&columns=ALL&pageSize=50&pageNumber=1"
