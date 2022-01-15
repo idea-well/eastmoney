@@ -22,6 +22,7 @@ type GsTiCaiData struct {
 	ZYCP              string       `json:"ZYCP"`              // 主营产品
 	SECURITYCODE      string       `json:"SECURITYCODE"`      // 股票代码
 	SECURITYSHORTNAME string       `json:"SECURITYSHORTNAME"` // 股票简称
+	LISTINGDATE       string       `json:"LISTINGDATE"`       // 上市时间
 	DIBK              BanKuaiDatas // 地域板块
 	HYBK              BanKuaiDatas // 行业板块
 	GNBK              BanKuaiDatas // 概念板块
