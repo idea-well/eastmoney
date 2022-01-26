@@ -17,19 +17,27 @@ type panKouRes struct {
 
 type panKouStrings []string
 
-func (pks panKouStrings) toData(start, end string) []*PanKouData {
+func (pks panKouStrings) toData(lastSign *string) []*PanKouData {
 	ds := make([]*PanKouData, 0)
-	for _, pk := range pks {
+	ix := pks.indexOf(*lastSign)
+	for _, pk := range pks[ix+1:] {
 		ss := strings.Split(pk, ",")
-		if ss[0] < start || ss[0] >= end {
-			continue
-		}
 		ds = append(ds, &PanKouData{
 			Time: ss[0], Code: ss[1], Market: ss[2], Name: ss[3],
 			Type: ss[4], Desc: ss[5], Direct: ss[6],
 		})
 	}
+	*lastSign = pks[len(pks)-1]
 	return ds
+}
+
+func (pks panKouStrings) indexOf(sign string) int {
+	for i := range pks {
+		if sign == pks[i] {
+			return i
+		}
+	}
+	return -1
 }
 
 type PanKouData struct {
@@ -43,15 +51,19 @@ type PanKouData struct {
 }
 
 func PanKou(d time.Duration, limit int, handler func([]*PanKouData) error, logger func(error)) {
-	var start, end string
+	var lastSign string
 	tck := time.NewTicker(d)
-	for now := range tck.C {
+	wrp := func(data []*PanKouData) error {
+		if len(data) == 0 {
+			return nil
+		}
+		return handler(data)
+	}
+	for range tck.C {
 		ss, err := doFetchPanKou(limit)
 		logger(callWithoutErr(err, func() error {
-			end = now.Format("15:04:05")
-			return handler(ss.toData(start, end))
+			return wrp(ss.toData(&lastSign))
 		}))
-		start = end // swap start
 	}
 }
 

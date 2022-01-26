@@ -7,7 +7,7 @@ import (
 )
 
 func TestPanKou(t *testing.T) {
-	PanKou(time.Minute, 100, testHandler, testLogger)
+	PanKou(time.Second*3, 10, testHandler, testLogger)
 }
 
 func testHandler(ds []*PanKouData) error {
@@ -16,5 +16,9 @@ func testHandler(ds []*PanKouData) error {
 }
 
 func testLogger(err error) {
-	fmt.Println(err)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(time.Now().String())
+	}
 }
