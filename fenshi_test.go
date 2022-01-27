@@ -6,6 +6,6 @@ import (
 )
 
 func TestFenShi(t *testing.T) {
-	datas, err := FenShi("300547", 0)
+	datas, err := FenShi("300541", 0)
 	fmt.Println(err, len(datas), datas[0])
 }

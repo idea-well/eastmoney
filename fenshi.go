@@ -20,24 +20,30 @@ type FengShiData struct {
 	Volume int `json:"v"`  // 手数
 }
 
+func (d *FengShiData) String() string {
+	return fmt.Sprintf("%d,%d,%d,%d", d.Type, d.Time, d.Price, d.Volume)
+}
+
 func FenShi(code string, market int) ([]*FengShiData, error) {
-	var datass, page = make([]*FengShiData, 0), 1
+	var datass, page, size = make([]*FengShiData, 0), 0, 1000
 	for {
-		datas, err := doFetchFenShiPage(code, market, page)
-		if err != nil || len(datas) == 0 {
+		datas, err := doFetchFenShiPage(code, market, page, size)
+		if len(datas) > 0 {
+			datass = append(datass, datas...)
+		}
+		if err != nil || len(datas) < size {
 			return datass, err
 		}
-		datass = append(datass, datas...)
 		page++ // next page
 	}
 }
 
 const fenShiApi = "http://push2ex.eastmoney.com/getStockFenShi" +
-	"?pagesize=100&ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wzfscj&sort=1&ft=1"
+	"?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wzfscj&sort=1&ft=1"
 
-func doFetchFenShiPage(code string, market, page int) ([]*FengShiData, error) {
+func doFetchFenShiPage(code string, market, page, size int) ([]*FengShiData, error) {
 	var res = new(fengShiRes)
-	query := fmt.Sprintf("&code=%s&market=%d&pageindex=%d", code, market, page)
+	query := fmt.Sprintf("&code=%s&market=%d&pageindex=%d&pagesize=%d", code, market, page, size)
 	resp, err := http.Get(fenShiApi + query)
 	return res.Data.Data, callWithoutErr(err, func() error {
 		defer resp.Body.Close()
