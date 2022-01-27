@@ -14,7 +14,7 @@ type fengShiRes struct {
 }
 
 type FengShiData struct {
-	Type   int `json:"bs"` // 1买 2卖
+	Type   int `json:"bs"` // 1卖 2买
 	Time   int `json:"t"`  // 时间
 	Price  int `json:"p"`  // 价格
 	Volume int `json:"v"`  // 手数
@@ -26,11 +26,20 @@ func (d *FengShiData) String() string {
 
 type FengShiDatas []*FengShiData
 
+func (ds FengShiDatas) realData() FengShiDatas {
+	for i, d := range ds {
+		if d.Type == 1 || d.Type == 2 {
+			return ds[i:]
+		}
+	}
+	return ds
+}
+
 func (ds FengShiDatas) KLineData() (kld KLineData) {
 	kld.Low = ds[0].Price
 	kld.Close = ds[len(ds)-1].Price
 	for i, d := range ds {
-		if d.Type == 1 {
+		if d.Type == 2 {
 			kld.Buy.Volume += d.Volume
 			kld.Buy.Amount += d.Volume * d.Price
 		} else {
@@ -65,6 +74,18 @@ type KLineData struct {
 	} `json:"sell"`
 }
 
+func (kld *KLineData) Pre() float64 {
+	return float64(kld.Buy.Amount+kld.Sell.Amount) / float64(kld.Buy.Volume+kld.Sell.Volume)
+}
+
+func (kld *KLineData) BuyPre() float64 {
+	return float64(kld.Buy.Amount) / float64(kld.Buy.Volume)
+}
+
+func (kld *KLineData) SellPre() float64 {
+	return float64(kld.Sell.Amount) / float64(kld.Sell.Volume)
+}
+
 func FenShi(code string, market int) (FengShiDatas, error) {
 	var datass, page, size = make(FengShiDatas, 0), 0, 1000
 	for {
@@ -73,7 +94,7 @@ func FenShi(code string, market int) (FengShiDatas, error) {
 			datass = append(datass, datas...)
 		}
 		if err != nil || len(datas) < size {
-			return datass, err
+			return datass.realData(), err
 		}
 		page++ // next page
 	}
