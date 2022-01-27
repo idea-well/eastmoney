@@ -20,24 +20,71 @@ type FengShiData struct {
 	Volume int `json:"v"`  // 手数
 }
 
-func FenShi(code string, market int) ([]*FengShiData, error) {
-	var datass, page = make([]*FengShiData, 0), 1
+func (d *FengShiData) String() string {
+	return fmt.Sprintf("%d,%d,%d,%d", d.Type, d.Time, d.Price, d.Volume)
+}
+
+type FengShiDatas []*FengShiData
+
+func (ds FengShiDatas) KLineData() (kld KLineData) {
+	kld.Low = ds[0].Price
+	kld.Close = ds[len(ds)-1].Price
+	for i, d := range ds {
+		if d.Type == 1 {
+			kld.Buy.Volume += d.Volume
+			kld.Buy.Amount += d.Volume * d.Price
+		} else {
+			kld.Sell.Volume += d.Volume
+			kld.Sell.Amount += d.Volume * d.Price
+		}
+		if kld.Open == 0 && d.Time >= 93000 {
+			kld.Open = ds[i-1].Price
+		}
+		if kld.Low > d.Price {
+			kld.Low = d.Price
+		}
+		if kld.High < d.Price {
+			kld.High = d.Price
+		}
+	}
+	return
+}
+
+type KLineData struct {
+	Open  int `json:"open"`  // 开盘
+	Close int `json:"close"` // 收盘
+	High  int `json:"high"`  // 最高
+	Low   int `json:"low"`   // 最低
+	Buy   struct {
+		Volume int `json:"volume"`
+		Amount int `json:"amount"`
+	} `json:"buy"`
+	Sell struct {
+		Volume int `json:"volume"`
+		Amount int `json:"amount"`
+	} `json:"sell"`
+}
+
+func FenShi(code string, market int) (FengShiDatas, error) {
+	var datass, page, size = make(FengShiDatas, 0), 0, 1000
 	for {
-		datas, err := doFetchFenShiPage(code, market, page)
-		if err != nil || len(datas) == 0 {
+		datas, err := doFetchFenShiPage(code, market, page, size)
+		if len(datas) > 0 {
+			datass = append(datass, datas...)
+		}
+		if err != nil || len(datas) < size {
 			return datass, err
 		}
-		datass = append(datass, datas...)
 		page++ // next page
 	}
 }
 
 const fenShiApi = "http://push2ex.eastmoney.com/getStockFenShi" +
-	"?pagesize=100&ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wzfscj&sort=1&ft=1"
+	"?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wzfscj&sort=1&ft=1"
 
-func doFetchFenShiPage(code string, market, page int) ([]*FengShiData, error) {
+func doFetchFenShiPage(code string, market, page, size int) (FengShiDatas, error) {
 	var res = new(fengShiRes)
-	query := fmt.Sprintf("&code=%s&market=%d&pageindex=%d", code, market, page)
+	query := fmt.Sprintf("&code=%s&market=%d&pageindex=%d&pagesize=%d", code, market, page, size)
 	resp, err := http.Get(fenShiApi + query)
 	return res.Data.Data, callWithoutErr(err, func() error {
 		defer resp.Body.Close()
