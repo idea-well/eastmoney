@@ -7,5 +7,6 @@ import (
 
 func TestFenShi(t *testing.T) {
 	datas, err := FenShi("300541", 0)
-	fmt.Println(err, len(datas), datas[0])
+	fmt.Println(err, len(datas))
+	fmt.Printf("%#v",datas.KLineData())
 }
