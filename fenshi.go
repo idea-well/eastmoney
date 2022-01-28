@@ -14,10 +14,10 @@ type fengShiRes struct {
 }
 
 type FengShiData struct {
-	Time   int `json:"t"`  // 成交时间
-	Type   int `json:"bs"` // 1卖 2买
-	Price  int `json:"p"`  // 成交价格
-	Volume int `json:"v"`  // 成交手数
+	Time   int     `json:"t"`  // 成交时间
+	Type   int     `json:"bs"` // 1卖 2买
+	Price  int     `json:"p"`  // 成交价格
+	Volume float64 `json:"v"`  // 成交手数
 }
 
 type FengShiDatas []*FengShiData
@@ -36,11 +36,11 @@ func (ds FengShiDatas) KLineData() (kld KLineData) {
 	kld.Close = ds[len(ds)-1].Price
 	for i, d := range ds {
 		if d.Type == 2 {
-			kld.Buy.Volume += d.Volume
-			kld.Buy.Amount += d.Volume * d.Price
+			kld.Buy.Volume += int(d.Volume)
+			kld.Buy.Amount += int(d.Volume) * d.Price
 		} else {
-			kld.Sell.Volume += d.Volume
-			kld.Sell.Amount += d.Volume * d.Price
+			kld.Sell.Volume += int(d.Volume)
+			kld.Sell.Amount += int(d.Volume) * d.Price
 		}
 		if kld.Open == 0 && d.Time >= 93000 {
 			kld.Open = ds[i-1].Price
@@ -106,6 +106,7 @@ func doFetchFenShiPage(code string, market, page, size int) (FengShiDatas, error
 	return res.Data.Data, callWithoutErr(err, func() error {
 		defer resp.Body.Close()
 		bts, err := ioutil.ReadAll(resp.Body)
+		fmt.Println(string(bts))
 		return callWithoutErr(err, func() error {
 			return json.Unmarshal(bts, res)
 		})
