@@ -106,7 +106,6 @@ func doFetchFenShiPage(code string, market, page, size int) (FengShiDatas, error
 	return res.Data.Data, callWithoutErr(err, func() error {
 		defer resp.Body.Close()
 		bts, err := ioutil.ReadAll(resp.Body)
-		fmt.Println(string(bts))
 		return callWithoutErr(err, func() error {
 			return json.Unmarshal(bts, res)
 		})
