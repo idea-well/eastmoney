@@ -14,14 +14,10 @@ type fengShiRes struct {
 }
 
 type FengShiData struct {
+	Time   int `json:"t"`  // 成交时间
 	Type   int `json:"bs"` // 1卖 2买
-	Time   int `json:"t"`  // 时间
-	Price  int `json:"p"`  // 价格
-	Volume int `json:"v"`  // 手数
-}
-
-func (d *FengShiData) String() string {
-	return fmt.Sprintf("%d,%d,%d,%d", d.Type, d.Time, d.Price, d.Volume)
+	Price  int `json:"p"`  // 成交价格
+	Volume int `json:"v"`  // 成交手数
 }
 
 type FengShiDatas []*FengShiData
