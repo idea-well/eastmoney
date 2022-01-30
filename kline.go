@@ -21,27 +21,36 @@ func (ks kLineStrings) toData() map[string]*KLineData {
 	map_ := make(map[string]*KLineData)
 	for _, kStr := range ks {
 		ss := strings.Split(kStr, ",")
-		map_[ss[0]] = &KLineData{}
-		map_[ss[0]].Open, _ = strconv.ParseFloat(ss[1], 64)
-		map_[ss[0]].Close, _ = strconv.ParseFloat(ss[2], 64)
-		map_[ss[0]].High, _ = strconv.ParseFloat(ss[3], 64)
-		map_[ss[0]].Low, _ = strconv.ParseFloat(ss[4], 64)
-		map_[ss[0]].Volume, _ = strconv.ParseFloat(ss[5], 64)
-		map_[ss[0]].Amount, _ = strconv.ParseFloat(ss[6], 64)
-		map_[ss[0]].Amplitude, _ = strconv.ParseFloat(ss[7], 64)
-		map_[ss[0]].Change, _ = strconv.ParseFloat(ss[8], 64)
-		map_[ss[0]].Turnover, _ = strconv.ParseFloat(ss[9], 64)
+		date := strings.ReplaceAll(ss[0], "-", "")
+		map_[date] = &KLineData{}
+		map_[date].Open, _ = strconv.ParseFloat(ss[1], 64)
+		map_[date].Close, _ = strconv.ParseFloat(ss[2], 64)
+		map_[date].High, _ = strconv.ParseFloat(ss[3], 64)
+		map_[date].Low, _ = strconv.ParseFloat(ss[4], 64)
+		map_[date].Volume, _ = strconv.ParseFloat(ss[5], 64)
+		map_[date].Amount, _ = strconv.ParseFloat(ss[6], 64)
+		map_[date].Amplitude, _ = strconv.ParseFloat(ss[7], 64)
+		map_[date].Change, _ = strconv.ParseFloat(ss[8], 64)
+		map_[date].Turnover, _ = strconv.ParseFloat(ss[9], 64)
 	}
 	return map_
 }
 
 const kLineApi = "http://push2his.eastmoney.com/api/qt/stock/kline/get" +
 	"?fields1=f5&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61" +
-	"&klt=101&fqt=1&end=20500101&lmt=1000000&secid=%d.%s"
+	"&klt=101&fqt=1&beg=%s&end=%s&lmt=1000000&secid=%d.%s"
 
-func KLine(code string, market int) (map[string]*KLineData, error) {
+func KLine(code string, market int, date ...string) (map[string]*KLineData, error) {
+	var beg, end string
 	var res = new(kLineRes)
-	resp, err := http.Get(fmt.Sprintf(kLineApi, market, code))
+	if len(date) == 0 {
+		beg, end = "0", "20500101"
+	} else {
+		beg = minString(date[0], date...)
+		end = maxString(date[0], date...)
+	}
+	url := fmt.Sprintf(kLineApi, beg, end, market, code)
+	resp, err := http.Get(url)
 	err = callWithoutErr(err, func() error {
 		defer resp.Body.Close()
 		bts, err := ioutil.ReadAll(resp.Body)
@@ -50,4 +59,29 @@ func KLine(code string, market int) (map[string]*KLineData, error) {
 		})
 	})
 	return res.Data.KLines.toData(), err
+}
+
+func KLineDate(code string, market int, date string) (*KLineData, error) {
+	map_, err := KLine(code, market, date)
+	return map_[date], err
+}
+
+func minString(s string, ss ...string) string {
+	if len(ss) == 0 {
+		return s
+	}
+	if s <= ss[0] {
+		return minString(s, ss[1:]...)
+	}
+	return minString(ss[0], ss[1:]...)
+}
+
+func maxString(s string, ss ...string) string {
+	if len(ss) == 0 {
+		return s
+	}
+	if s >= ss[0] {
+		return maxString(s, ss[1:]...)
+	}
+	return maxString(ss[0], ss[1:]...)
 }
