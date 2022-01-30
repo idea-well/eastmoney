@@ -43,9 +43,11 @@ func (ds FengShiDatas) KLineData() (kld KLineData) {
 	kld.Close = ds[len(ds)-1].CNY()
 	for _, d := range ds {
 		if d.Type == 2 {
+			kld.Buy.Count += 1
 			kld.Buy.Volume += d.Volume
 			kld.Buy.Amount += d.Volume * d.CNY() * 100
 		} else {
+			kld.Sell.Count += 1
 			kld.Sell.Volume += d.Volume
 			kld.Sell.Amount += d.Volume * d.CNY() * 100
 		}
@@ -68,25 +70,35 @@ type KLineData struct {
 	Turnover  float64 `json:"turnover"`  // 换手率
 	Amplitude float64 `json:"amplitude"` // 日振幅
 	Buy       struct {
+		Count  float64 `json:"count"`
 		Volume float64 `json:"volume"`
 		Amount float64 `json:"amount"`
 	} `json:"buy"`
 	Sell struct {
+		Count  float64 `json:"count"`
 		Volume float64 `json:"volume"`
 		Amount float64 `json:"amount"`
 	} `json:"sell"`
 }
 
-func (kld *KLineData) Pre() float64 {
+func (kld *KLineData) AvgPrice() float64 {
 	return kld.Amount / (kld.Volume * 100)
 }
 
-func (kld *KLineData) BuyPre() float64 {
+func (kld *KLineData) BuyAvgPrice() float64 {
 	return kld.Buy.Amount / (kld.Buy.Volume * 100)
 }
 
-func (kld *KLineData) SellPre() float64 {
+func (kld *KLineData) SellAvgPrice() float64 {
 	return kld.Sell.Amount / (kld.Sell.Volume * 100)
+}
+
+func (kld *KLineData) BuyAvgCount() float64 {
+	return kld.Buy.Volume / kld.Buy.Count
+}
+
+func (kld *KLineData) SellAvgCount() float64 {
+	return kld.Sell.Volume / kld.Sell.Count
 }
 
 func FenShi(code string, market int) (FengShiDatas, error) {
