@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 )
 
@@ -16,8 +17,12 @@ type fengShiRes struct {
 type FengShiData struct {
 	Time   int     `json:"t"`  // 成交时间
 	Type   int     `json:"bs"` // 1卖 2买
-	Price  int     `json:"p"`  // 成交价格
+	Price  float64 `json:"p"`  // 成交价格
 	Volume float64 `json:"v"`  // 成交手数
+}
+
+func (fs FengShiData) CNY() float64 {
+	return fs.Price / float64(1000)
 }
 
 type FengShiDatas []*FengShiData
@@ -32,54 +37,56 @@ func (ds FengShiDatas) realData() FengShiDatas {
 }
 
 func (ds FengShiDatas) KLineData() (kld KLineData) {
-	kld.Low = ds[0].Price
-	kld.Close = ds[len(ds)-1].Price
-	for i, d := range ds {
+	kld.Low = ds[0].CNY()
+	kld.Open = ds[0].CNY()
+	kld.High = ds[0].CNY()
+	kld.Close = ds[len(ds)-1].CNY()
+	for _, d := range ds {
 		if d.Type == 2 {
-			kld.Buy.Volume += int(d.Volume)
-			kld.Buy.Amount += int(d.Volume) * d.Price
+			kld.Buy.Volume += d.Volume
+			kld.Buy.Amount += d.Volume * d.CNY() * 100
 		} else {
-			kld.Sell.Volume += int(d.Volume)
-			kld.Sell.Amount += int(d.Volume) * d.Price
+			kld.Sell.Volume += d.Volume
+			kld.Sell.Amount += d.Volume * d.CNY() * 100
 		}
-		if kld.Open == 0 && d.Time >= 93000 {
-			kld.Open = ds[i-1].Price
-		}
-		if kld.Low > d.Price {
-			kld.Low = d.Price
-		}
-		if kld.High < d.Price {
-			kld.High = d.Price
-		}
+		kld.Volume += d.Volume
+		kld.Amount += d.Volume * d.CNY() * 100
+		kld.Low = math.Min(kld.Low, d.CNY())
+		kld.High = math.Max(kld.High, d.CNY())
 	}
 	return
 }
 
 type KLineData struct {
-	Open  int `json:"open"`  // 开盘
-	Close int `json:"close"` // 收盘
-	High  int `json:"high"`  // 最高
-	Low   int `json:"low"`   // 最低
-	Buy   struct {
-		Volume int `json:"volume"`
-		Amount int `json:"amount"`
+	Open      float64 `json:"open"`      // 开盘
+	Close     float64 `json:"close"`     // 收盘
+	High      float64 `json:"high"`      // 最高
+	Low       float64 `json:"low"`       // 最低
+	Volume    float64 `json:"volume"`    // 成交量
+	Amount    float64 `json:"amount"`    // 成交额
+	Change    float64 `json:"change"`    // 日涨幅
+	Turnover  float64 `json:"turnover"`  // 换手率
+	Amplitude float64 `json:"amplitude"` // 日振幅
+	Buy       struct {
+		Volume float64 `json:"volume"`
+		Amount float64 `json:"amount"`
 	} `json:"buy"`
 	Sell struct {
-		Volume int `json:"volume"`
-		Amount int `json:"amount"`
+		Volume float64 `json:"volume"`
+		Amount float64 `json:"amount"`
 	} `json:"sell"`
 }
 
 func (kld *KLineData) Pre() float64 {
-	return float64(kld.Buy.Amount+kld.Sell.Amount) / float64(kld.Buy.Volume+kld.Sell.Volume)
+	return kld.Amount / (kld.Volume * 100)
 }
 
 func (kld *KLineData) BuyPre() float64 {
-	return float64(kld.Buy.Amount) / float64(kld.Buy.Volume)
+	return kld.Buy.Amount / (kld.Buy.Volume * 100)
 }
 
 func (kld *KLineData) SellPre() float64 {
-	return float64(kld.Sell.Amount) / float64(kld.Sell.Volume)
+	return kld.Sell.Amount / (kld.Sell.Volume * 100)
 }
 
 func FenShi(code string, market int) (FengShiDatas, error) {
@@ -110,4 +117,18 @@ func doFetchFenShiPage(code string, market, page, size int) (FengShiDatas, error
 			return json.Unmarshal(bts, res)
 		})
 	})
+}
+
+func minInt(v1, v2 int) int {
+	if v1 > v2 {
+		return v2
+	}
+	return v1
+}
+
+func maxInt(v1, v2 int) int {
+	if v1 > v2 {
+		return v1
+	}
+	return v2
 }
