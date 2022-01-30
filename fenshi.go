@@ -101,6 +101,14 @@ func (kld *KLineData) SellAvgCount() float64 {
 	return kld.Sell.Volume / kld.Sell.Count
 }
 
+func (kld *KLineData) BuyAvgAmount() float64 {
+	return kld.Buy.Amount / kld.Buy.Count
+}
+
+func (kld *KLineData) SellAvgAmount() float64 {
+	return kld.Sell.Amount / kld.Sell.Count
+}
+
 func FenShi(code string, market int) (FengShiDatas, error) {
 	var datass, page, size = make(FengShiDatas, 0), 0, 1000
 	for {
