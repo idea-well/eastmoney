@@ -40,7 +40,7 @@ func (ks kLineStrings) toData(lastPre float64) map[string]*KLineData {
 
 const kLineApi = "http://push2his.eastmoney.com/api/qt/stock/kline/get" +
 	"?fields1=f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61" +
-	"&klt=101&fqt=1&beg=%s&end=%s&lmt=1000000&secid=%d.%s"
+	"&klt=101&fqt=0&beg=%s&end=%s&lmt=1000000&secid=%d.%s"
 
 func KLine(code string, market int, date ...string) (map[string]*KLineData, error) {
 	var beg, end string
