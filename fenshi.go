@@ -69,6 +69,7 @@ type KLineData struct {
 	Change    float64 `json:"change"`    // 日涨幅
 	Turnover  float64 `json:"turnover"`  // 换手率
 	Amplitude float64 `json:"amplitude"` // 日振幅
+	PreClose  float64 `json:"pre_close"` // 昨收盘
 	Buy       struct {
 		Count  float64 `json:"count"`
 		Volume float64 `json:"volume"`
