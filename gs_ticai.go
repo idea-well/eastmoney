@@ -23,6 +23,8 @@ type GsTiCaiData struct {
 	SECURITYCODE      string       `json:"SECURITYCODE"`      // 股票代码
 	SECURITYSHORTNAME string       `json:"SECURITYSHORTNAME"` // 股票简称
 	LISTINGDATE       string       `json:"LISTINGDATE"`       // 上市时间
+	LTGB              string       `json:"ltgb"`              // 流通股本
+	ZGB               string       `json:"zgb"`               // 总股本
 	DIBK              BanKuaiDatas // 地域板块
 	HYBK              BanKuaiDatas // 行业板块
 	GNBK              BanKuaiDatas // 概念板块
