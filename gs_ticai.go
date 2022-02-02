@@ -14,33 +14,25 @@ type gsTiCaiRes struct {
 }
 
 type GsTiCaiData struct {
-	BK                string       `json:"BK"`                // 所属板块
-	BUSINSCOPE        string       `json:"BUSINSCOPE"`        // 经营范围
-	COMPPROFILE       string       `json:"COMPPROFILE"`       // 公司简介
-	COMPSCOPE         string       `json:"COMPSCOPE"`         // 公司沿革
-	MAINBUSIN         string       `json:"MAINBUSIN"`         // 主营业务
-	ZYCP              string       `json:"ZYCP"`              // 主营产品
-	SECURITYCODE      string       `json:"SECURITYCODE"`      // 股票代码
-	SECURITYSHORTNAME string       `json:"SECURITYSHORTNAME"` // 股票简称
-	LISTINGDATE       string       `json:"LISTINGDATE"`       // 上市时间
-	LTGB              string       `json:"ltgb"`              // 流通股本
-	ZGB               string       `json:"zgb"`               // 总股本
-	DIBK              BanKuaiDatas // 地域板块
-	HYBK              BanKuaiDatas // 行业板块
-	GNBK              BanKuaiDatas // 概念板块
+	BK                string         `json:"BK"`                // 所属板块
+	BUSINSCOPE        string         `json:"BUSINSCOPE"`        // 经营范围
+	COMPPROFILE       string         `json:"COMPPROFILE"`       // 公司简介
+	COMPSCOPE         string         `json:"COMPSCOPE"`         // 公司沿革
+	MAINBUSIN         string         `json:"MAINBUSIN"`         // 主营业务
+	ZYCP              string         `json:"ZYCP"`              // 主营产品
+	SECURITYCODE      string         `json:"SECURITYCODE"`      // 股票代码
+	SECURITYSHORTNAME string         `json:"SECURITYSHORTNAME"` // 股票简称
+	LISTINGDATE       string         `json:"LISTINGDATE"`       // 上市时间
+	LTGB              string         `json:"ltgb"`              // 流通股本
+	ZGB               string         `json:"zgb"`               // 总股本
+	BanKuai           []*BanKuaiData // 所属板块
 }
 
-func (d *GsTiCaiData) fillBK(dy, hy, gn map[string]*BanKuaiData) {
+func (d *GsTiCaiData) fillBK(idx map[string]*BanKuaiData) {
 	bks := strings.Split(d.BK, ",")
 	for _, bk := range bks {
-		if v, ok := dy[bk]; ok {
-			d.DIBK = append(d.DIBK, v)
-		}
-		if v, ok := hy[bk]; ok {
-			d.HYBK = append(d.HYBK, v)
-		}
-		if v, ok := gn[bk]; ok {
-			d.GNBK = append(d.GNBK, v)
+		if v, ok := idx[bk]; ok {
+			d.BanKuai = append(d.BanKuai, v)
 		}
 	}
 }
@@ -48,17 +40,11 @@ func (d *GsTiCaiData) fillBK(dy, hy, gn map[string]*BanKuaiData) {
 type GsTiCaiDatas []*GsTiCaiData
 
 func (gs GsTiCaiDatas) fetchBanKuai() error {
-	var errs = new(Errors)
-	dyBK, err1 := DiYuBanKuai()
-	hyBK, err2 := HangYeBanKuai()
-	gnBK, err3 := GaiNianBanKuai()
-	errs.add(err1, err2, err3)
-	return callWithoutErr2(errs.first(), func() {
-		dyIndex := dyBK.indexByName()
-		hyIndex := hyBK.indexByName()
-		gnIndex := gnBK.indexByName()
+	datas, err := BanKuai()
+	return callWithoutErr2(err, func() {
+		dataIdx := datas.indexByName()
 		for _, g := range gs {
-			g.fillBK(dyIndex, hyIndex, gnIndex)
+			g.fillBK(dataIdx)
 		}
 	})
 }

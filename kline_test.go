@@ -12,6 +12,6 @@ func TestKLine(t *testing.T) {
 }
 
 func TestMLine(t *testing.T) {
-	data, err := MLine("300547", 0)
+	data, err := MLine("BK0539", 90)
 	fmt.Println(err, len(data), data["0931"])
 }
