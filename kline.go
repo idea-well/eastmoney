@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
@@ -24,23 +23,39 @@ func (ks kLineStrings) toData(lastPre float64) map[string]*KLineData {
 		ss := strings.Split(kStr, ",")
 		date := strings.ReplaceAll(ss[0], "-", "")
 		map_[date] = &KLineData{PreClose: lastPre}
-		map_[date].Open, _ = strconv.ParseFloat(ss[1], 64)
-		map_[date].Close, _ = strconv.ParseFloat(ss[2], 64)
-		map_[date].High, _ = strconv.ParseFloat(ss[3], 64)
-		map_[date].Low, _ = strconv.ParseFloat(ss[4], 64)
-		map_[date].Volume, _ = strconv.ParseFloat(ss[5], 64)
-		map_[date].Amount, _ = strconv.ParseFloat(ss[6], 64)
-		map_[date].Amplitude, _ = strconv.ParseFloat(ss[7], 64)
-		map_[date].Change, _ = strconv.ParseFloat(ss[8], 64)
-		map_[date].Turnover, _ = strconv.ParseFloat(ss[9], 64)
+		map_[date].Open = ParseFloat(ss[1])
+		map_[date].Close = ParseFloat(ss[2])
+		map_[date].High = ParseFloat(ss[3])
+		map_[date].Low = ParseFloat(ss[4])
+		map_[date].Volume = ParseInt(ss[5])
+		map_[date].Amount = ParseFloat(ss[6])
+		map_[date].Amplitude = ParseFloat(ss[7])
+		map_[date].Change = ParseFloat(ss[8])
+		map_[date].Turnover = ParseFloat(ss[9])
+		map_[date].AvgPrice = map_[date].Amount / (float64(map_[date].Volume) * 100)
 		lastPre = map_[date].Close
 	}
 	return map_
 }
 
+// KLineData
+type KLineData struct {
+	Open      float64 `json:"open"`      // 开盘
+	Close     float64 `json:"close"`     // 收盘
+	High      float64 `json:"high"`      // 最高
+	Low       float64 `json:"low"`       // 最低
+	Volume    int     `json:"volume"`    // 成交量
+	Amount    float64 `json:"amount"`    // 成交额
+	Change    float64 `json:"change"`    // 日涨幅
+	Turnover  float64 `json:"turnover"`  // 换手率
+	Amplitude float64 `json:"amplitude"` // 日振幅
+	PreClose  float64 `json:"pre_close"` // 昨收盘
+	AvgPrice  float64 `json:"avg_price"` // 平均价
+}
+
 const kLineApi = "http://push2his.eastmoney.com/api/qt/stock/kline/get" +
 	"?fields1=f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f61" +
-	"&klt=101&fqt=0&beg=%s&end=%s&lmt=1000000&secid=%d.%s"
+	"&klt=101&fqt=1&beg=%s&end=%s&lmt=1000000&secid=%d.%s"
 
 func KLine(code string, market int, date ...string) (map[string]*KLineData, error) {
 	var beg, end string
@@ -48,8 +63,8 @@ func KLine(code string, market int, date ...string) (map[string]*KLineData, erro
 	if len(date) == 0 {
 		beg, end = "0", "20500101"
 	} else {
-		beg = minString(date[0], date...)
-		end = maxString(date[0], date...)
+		beg = MinString(date[0], date...)
+		end = MaxString(date[0], date...)
 	}
 	url := fmt.Sprintf(kLineApi, beg, end, market, code)
 	resp, err := http.Get(url)
@@ -66,24 +81,4 @@ func KLine(code string, market int, date ...string) (map[string]*KLineData, erro
 func KLineDate(code string, market int, date string) (*KLineData, error) {
 	map_, err := KLine(code, market, date)
 	return map_[date], err
-}
-
-func minString(s string, ss ...string) string {
-	if len(ss) == 0 {
-		return s
-	}
-	if s <= ss[0] {
-		return minString(s, ss[1:]...)
-	}
-	return minString(ss[0], ss[1:]...)
-}
-
-func maxString(s string, ss ...string) string {
-	if len(ss) == 0 {
-		return s
-	}
-	if s >= ss[0] {
-		return maxString(s, ss[1:]...)
-	}
-	return maxString(ss[0], ss[1:]...)
 }

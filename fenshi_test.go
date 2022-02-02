@@ -6,8 +6,6 @@ import (
 )
 
 func TestFenShi(t *testing.T) {
-	datas, err := FenShi("300732", 0)
-	fmt.Println(err, len(datas))
-	kld := datas.KLineData()
-	fmt.Println(kld.BuyAvgAmount(), kld.SellAvgAmount())
+	datas, pre, err := FenShi("300732", 0)
+	fmt.Println(err, len(datas), pre, datas[0])
 }
