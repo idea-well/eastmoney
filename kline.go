@@ -51,9 +51,17 @@ type KLineData struct {
 	Volume    int     `json:"volume"`    // 成交量
 	Amount    float64 `json:"amount"`    // 成交额
 	Change    float64 `json:"change"`    // 日涨幅
-	Turnover  float64 `json:"turnover"`  // 换手率
 	Amplitude float64 `json:"amplitude"` // 日振幅
+	Turnover  float64 `json:"turnover"`  // 换手率
 	PreClose  float64 `json:"pre_close"` // 昨收盘
+}
+
+func (k *KLineData) String() string {
+	return fmt.Sprintf(
+		"%.2f,%.2f,%.2f,%.2f,%d,%.2f,%.2f,%.2f,%.2f,%.2f",
+		k.Open, k.Close, k.High, k.Low, k.Volume, k.Amount,
+		k.Change, k.Amplitude, k.Turnover, k.PreClose,
+	)
 }
 
 const kLineApi = "http://push2his.eastmoney.com/api/qt/stock/kline/get" +

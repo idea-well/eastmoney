@@ -1,6 +1,7 @@
 package eastmoney
 
 import (
+	"github.com/shopspring/decimal"
 	"strconv"
 	"time"
 )
@@ -11,8 +12,9 @@ func ParseInt(s string) int {
 }
 
 func ParseFloat(s string) float64 {
-	f, _ := strconv.ParseFloat(s, 64)
-	return f
+	fs, _ := decimal.NewFromString(s)
+	fv, _ := fs.Round(2).Float64()
+	return fv
 }
 
 func TodayString() string {
