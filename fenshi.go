@@ -39,11 +39,11 @@ func (fs fenShiStrings) toData() FengShiDatas {
 
 // FengShiData
 type FengShiData struct {
-	Time   string  `json:"t"`     // 成交时间
-	Type   int     `json:"bs"`    // 1卖 2买
-	Price  float64 `json:"p"`     // 成交价格
-	Volume int     `json:"v"`     // 成交手数
-	Count  int     `json:"count"` // 成交笔数
+	Time   string  `json:"time"`   // 成交时间
+	Type   int     `json:"type"`   // 1卖 2买
+	Price  float64 `json:"price"`  // 成交价格
+	Volume int     `json:"volume"` // 成交手数
+	Count  int     `json:"count"`  // 成交笔数
 }
 
 // FengShiDatas
