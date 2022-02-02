@@ -17,9 +17,9 @@ type kLineRes struct {
 
 type kLineStrings []string
 
-func (ks kLineStrings) toData(lastPre float64, min bool) map[string]*KLineData {
-	map_ := make(map[string]*KLineData)
-	for _, kStr := range ks {
+func (ks kLineStrings) toData(lastPre float64, min bool) KLineDatas {
+	datas := make(KLineDatas, len(ks))
+	for index, kStr := range ks {
 		var key string
 		ss := strings.Split(kStr, ",")
 		if min {
@@ -27,23 +27,26 @@ func (ks kLineStrings) toData(lastPre float64, min bool) map[string]*KLineData {
 		} else {
 			key = strings.ReplaceAll(ss[0], "-", "")
 		}
-		map_[key] = &KLineData{PreClose: lastPre}
-		map_[key].Open = ParseFloat(ss[1])
-		map_[key].Close = ParseFloat(ss[2])
-		map_[key].High = ParseFloat(ss[3])
-		map_[key].Low = ParseFloat(ss[4])
-		map_[key].Volume = ParseInt(ss[5])
-		map_[key].Amount = ParseFloat(ss[6])
-		map_[key].Amplitude = ParseFloat(ss[7])
-		map_[key].Change = ParseFloat(ss[8])
-		map_[key].Turnover = ParseFloat(ss[9])
-		lastPre = map_[key].Close
+		datas[index] = &KLineData{
+			PreClose: lastPre, Time: key,
+			Open:      ParseFloat(ss[1]),
+			Close:     ParseFloat(ss[2]),
+			High:      ParseFloat(ss[3]),
+			Low:       ParseFloat(ss[4]),
+			Volume:    ParseInt(ss[5]),
+			Amount:    ParseFloat(ss[6]),
+			Amplitude: ParseFloat(ss[7]),
+			Change:    ParseFloat(ss[8]),
+			Turnover:  ParseFloat(ss[9]),
+		}
+		lastPre = datas[index].Close
 	}
-	return map_
+	return datas
 }
 
 // KLineData
 type KLineData struct {
+	Time      string  `json:"time"`      // 日期
 	Open      float64 `json:"open"`      // 开盘
 	Close     float64 `json:"close"`     // 收盘
 	High      float64 `json:"high"`      // 最高
@@ -56,19 +59,33 @@ type KLineData struct {
 	PreClose  float64 `json:"pre_close"` // 昨收盘
 }
 
-func (k *KLineData) String() string {
-	return fmt.Sprintf(
-		"%.2f,%.2f,%.2f,%.2f,%d,%.2f,%.2f,%.2f,%.2f,%.2f",
-		k.Open, k.Close, k.High, k.Low, k.Volume, k.Amount,
-		k.Change, k.Amplitude, k.Turnover, k.PreClose,
-	)
+func (k *KLineData) Strings() [2]string {
+	return [2]string{
+		k.Time,
+		fmt.Sprintf(
+			"%.2f,%.2f,%.2f,%.2f,%d,%.2f,%.2f,%.2f,%.2f,%.2f",
+			k.Open, k.Close, k.High, k.Low, k.Volume, k.Amount,
+			k.Change, k.Amplitude, k.Turnover, k.PreClose,
+		),
+	}
+}
+
+type KLineDatas []*KLineData
+
+func (ds KLineDatas) at(time string) *KLineData {
+	for _, data := range ds {
+		if data.Time == time {
+			return data
+		}
+	}
+	return nil
 }
 
 const kLineApi = "http://push2his.eastmoney.com/api/qt/stock/kline/get" +
 	"?fields1=f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f61" +
 	"&klt=%d&fqt=1&beg=%s&end=%s&lmt=1000000&secid=%d.%s"
 
-func MLine(code string, market int) (map[string]*KLineData, error) {
+func MLine(code string, market int) (KLineDatas, error) {
 	var res = new(kLineRes)
 	url := fmt.Sprintf(kLineApi, 1, "0", "20500101", market, code)
 	resp, err := http.Get(url)
@@ -82,7 +99,7 @@ func MLine(code string, market int) (map[string]*KLineData, error) {
 	return res.Data.KLines.toData(res.Data.PreKPrice, true), err
 }
 
-func KLine(code string, market int, date ...string) (map[string]*KLineData, error) {
+func KLine(code string, market int, date ...string) (KLineDatas, error) {
 	var beg, end string
 	var res = new(kLineRes)
 	if len(date) == 0 {
@@ -104,6 +121,6 @@ func KLine(code string, market int, date ...string) (map[string]*KLineData, erro
 }
 
 func KLineDate(code string, market int, date string) (*KLineData, error) {
-	map_, err := KLine(code, market, date)
-	return map_[date], err
+	datas, err := KLine(code, market, date)
+	return datas.at(date), err
 }
