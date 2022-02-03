@@ -46,9 +46,9 @@ type FengShiData struct {
 	Count  int     `json:"count"`  // 成交笔数
 }
 
-func (f *FengShiData) Strings(pre string) [2]string {
+func (f *FengShiData) Strings() [2]string {
 	return [2]string{
-		fmt.Sprintf("%s%s", pre, f.Time),
+		f.Time,
 		fmt.Sprintf("%d,%.2f,%d,%d", f.Type, f.Price, f.Volume, f.Count),
 	}
 }

@@ -59,9 +59,9 @@ type KLineData struct {
 	PreClose  float64 `json:"pre_close"` // 昨收盘
 }
 
-func (k *KLineData) Strings(pre string) [2]string {
+func (k *KLineData) Strings() [2]string {
 	return [2]string{
-		fmt.Sprintf("%s%s", pre, k.Time),
+		k.Time,
 		fmt.Sprintf(
 			"%.2f,%.2f,%.2f,%.2f,%d,%.2f,%.2f,%.2f,%.2f,%.2f",
 			k.Open, k.Close, k.High, k.Low, k.Volume, k.Amount,
