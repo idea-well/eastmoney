@@ -9,7 +9,7 @@ import (
 
 type banKuaiRes struct {
 	Data struct {
-		Diff BanKuaiDatas `json:"diff"`
+		Diff BanKuaiDataMap `json:"diff"`
 	} `json:"data"`
 }
 
@@ -19,20 +19,17 @@ type BanKuaiData struct {
 	BkType int
 }
 
-type BanKuaiDatas map[string]*BanKuaiData
+// BanKuaiDataMap
+type BanKuaiDataMap map[string]*BanKuaiData
 
-func (ds BanKuaiDatas) fillType(typ int) {
-	for _, d := range ds {
+func (dm BanKuaiDataMap) fillType(typ int) {
+	for _, d := range dm {
 		d.BkType = typ
 	}
 }
 
-func (ds BanKuaiDatas) append(ds2 BanKuaiDatas) BanKuaiDatas {
-	for key, val := range ds2 {
-		ds[key] = val
-	}
-	return ds
-}
+// BanKuaiDatas
+type BanKuaiDatas []*BanKuaiData
 
 func (ds BanKuaiDatas) indexByName() map[string]*BanKuaiData {
 	map_ := make(map[string]*BanKuaiData)
@@ -49,12 +46,22 @@ func BanKuai() (BanKuaiDatas, error) {
 	ds2, er2 := doFetchBanKuaiType(2)
 	ds3, er3 := doFetchBanKuaiType(3)
 	err := firstError(er1, er2, er3)
-	return ds3.append(ds2).append(ds1), err
+	return mergeBanKuaiDatas(ds1, ds2, ds3), err
 }
 
-func doFetchBanKuaiType(typ int) (BanKuaiDatas, error) {
+func mergeBanKuaiDatas(dss ...BanKuaiDataMap) BanKuaiDatas {
+	ss := make(BanKuaiDatas, 0)
+	for _, ds := range dss {
+		for _, d := range ds {
+			ss = append(ss, d)
+		}
+	}
+	return ss
+}
+
+func doFetchBanKuaiType(typ int) (BanKuaiDataMap, error) {
 	var res = new(banKuaiRes)
-	res.Data.Diff = make(BanKuaiDatas)
+	res.Data.Diff = make(BanKuaiDataMap)
 	resp, err := http.Get(fmt.Sprintf(banKuaiApi, typ))
 	defer res.Data.Diff.fillType(typ)
 	return res.Data.Diff, callWithoutErr(err, func() error {
