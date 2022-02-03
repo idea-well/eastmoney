@@ -7,5 +7,5 @@ import (
 
 func TestBanKuai(t *testing.T) {
 	data, err := BanKuai()
-	fmt.Println(err, len(data))
+	fmt.Println(err, len(data), data["100"])
 }

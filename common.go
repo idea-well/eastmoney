@@ -71,3 +71,12 @@ func (es *Errors) first() error {
 	}
 	return nil
 }
+
+func firstError(errs ...error) error {
+	for _, err := range errs {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
