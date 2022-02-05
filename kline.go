@@ -100,6 +100,23 @@ func MLine(code string, market int) (KLineDatas, error) {
 }
 
 func KLine(code string, market int, date ...string) (KLineDatas, error) {
+	return doFetchKLine(code, market, 101, date...)
+}
+
+func WeekKLine(code string, market int, date ...string) (KLineDatas, error) {
+	return doFetchKLine(code, market, 102, date...)
+}
+
+func MonthKLine(code string, market int, date ...string) (KLineDatas, error) {
+	return doFetchKLine(code, market, 103, date...)
+}
+
+func KLineDate(code string, market int, date string) (*KLineData, error) {
+	datas, err := KLine(code, market, date)
+	return datas.at(date), err
+}
+
+func doFetchKLine(code string, market, typ int, date ...string) (KLineDatas, error) {
 	var beg, end string
 	var res = new(kLineRes)
 	if len(date) == 0 {
@@ -108,7 +125,7 @@ func KLine(code string, market int, date ...string) (KLineDatas, error) {
 		beg = MinString(date[0], date...)
 		end = MaxString(date[0], date...)
 	}
-	url := fmt.Sprintf(kLineApi, 101, beg, end, market, code)
+	url := fmt.Sprintf(kLineApi, typ, beg, end, market, code)
 	resp, err := http.Get(url)
 	err = callWithoutErr(err, func() error {
 		defer resp.Body.Close()
@@ -118,9 +135,4 @@ func KLine(code string, market int, date ...string) (KLineDatas, error) {
 		})
 	})
 	return res.Data.KLines.toData(res.Data.PreKPrice, false), err
-}
-
-func KLineDate(code string, market int, date string) (*KLineData, error) {
-	datas, err := KLine(code, market, date)
-	return datas.at(date), err
 }
